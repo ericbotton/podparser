@@ -1,5 +1,12 @@
 import curses
 import os
+import requests
+import shutil
+from mutagen.id3 import ID3
+from tqdm import tqdm
+
+podcast_directory = "/home/edb/podparser/"
+tmp_directory = "/tmp"
 
 
 def read_files_in_directory(directory_path):
@@ -91,8 +98,36 @@ def scrollable_list(items, max_visible=17):
                 return None
 
 
+def download_episode(url, filename):
+    response = requests.get(url, stream=True)
+    total_size_in_bytes = int(response.headers.get('content-length', 0))
+
+    with open(filename, 'wb') as file:
+        for data in tqdm(response.iter_content(1024),
+                         total=total_size_in_bytes,
+                         unit='B',
+                         unit_scale=True,
+                         desc=filename):
+            file.write(data)
+
+
+def rename_and_tag(old_path, new_path):
+    try:
+        shutil.move(old_path, new_path)
+        print(f"File renamed and moved successfully: {old_path} -> {new_path}")
+    except shutil.Error as e:
+        print(f"Error: {e}")
+
+
+def list_mp3_tags(file_path):
+    audio = ID3(file_path)
+    tag_list = []
+    for key in audio.keys():
+        tag_list.append(f"<{key}> = \"{audio[key]}\" | ")
+    print(str(tag_list))
+
+
 if __name__ == '__main__':
-    podcast_directory = "/home/edb/podparser/"
     file_list = read_files_in_directory(podcast_directory)
     # options = ["Option 1", "Option 2", "Option 3", "Option 4"]
     # options = file_list
@@ -135,13 +170,19 @@ if __name__ == '__main__':
 
     if selected_index is not None:
         episode_date_title = items[selected_index]
-        print(f'episode_date_title="{episode_date_title}"')
+        # print(f'episode_date_title="{episode_date_title}"')
         episode_url = title_url_dict[episode_date_title]
-        print(f'episode_url="{episode_url}"')
-        exit()
+        # print(f'episode_url="{episode_url}"')
 
     print(f"TITLE={episode_date_title}")
     print(episode_url)
+
+    tmp_filename = f'{tmp_directory}/{episode_date_title}'
+    dest_filename = f'{podcast_directory}/{episode_date_title}'
+    download_episode(episode_url, tmp_filename)
+    rename_and_tag(tmp_filename, dest_filename)
+    list_mp3_tags(dest_filename)
+
 '''
 
 
@@ -153,4 +194,7 @@ if __name__ == '__main__':
 
     print(f'title: {selected_item}')
     print(f'  URL: {title_url_dict[selected_item]}')
+
+    rename_and_tag(filename, dest_filename):
+    # Specify the old and new file names
 '''
