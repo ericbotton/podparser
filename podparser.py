@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import curses
 import feedparser
 import requests
@@ -19,8 +20,20 @@ podcast_list = [
          'https://www.thisamericanlife.org/podcast/rss.xml'),
         ('a-history-of-rock-music-in-500songs',
          'https://500songs.com/feed/podcast/\
-             a-history-of-rock-music-in-500-songs')
+             a-history-of-rock-music-in-500-songs'),
+        ('City Lights (omnycontent.com)', 'https://www.omnycontent.com/\
+            d/playlist/5ec71174-b7c1-46da-88de-b18e00b479cf/\
+                59709110-36d6-4f15-9fcb-b216012865ef/\
+                    c2912173-9add-43da-bdf6-b2160128660b/podcast.rss'),
+        ('Crash Course Pods: The Universe',
+            'https://feeds.simplecast.com/ASAdCBih'),
+        ('Crucible Moments', 'https://feeds.megaphone.fm/VMP5587961509'),
+        ('Dan Carlin\'s Hardcore History',
+         'https://feeds.feedburner.com/dancarlin/history'),
+        ('Dan Carlin\'s Hardcore History: Addendum',
+         'https://dchhaddendum.libsyn.com/rss')
         ]
+parsed_directory = '/home/edb/podparser/parsed/'
 
 
 def download_feed(podcast_title, podcast_url):
@@ -32,8 +45,8 @@ def download_feed(podcast_title, podcast_url):
             if chunk:
                 f.write(chunk)
                 progress = int(f.tell() * 100 / total_size)
-                print(f'Downloading: {progress}%', end=' ', flush=True)
-                print('Download complete!')
+                print(f"Downloading: {progress}%", end=' ', flush=True)
+                print("Download complete!")
 
 
 def read_feed(filename):
@@ -56,48 +69,42 @@ def fetch_podcast_info(rss_feed, parsed_file, mp3_file):
 
     # Check if the feed is valid
     if feed.bozo:
-        print('Error parsing feed.')
+        print("Error parsing feed.")
         return
 
     # Print and write the podcast title
     with open(parsed_file, 'w') as f:
-        print(f'Podcast Title: {feed.feed.title}')
-        f.write(f'Podcast Title: {feed.feed.title}\n')
+        podcast_title = feed.feed.title
+        print(f"Podcast Title: {podcast_title}")
+        f.write(f'Podcast Title: "{podcast_title}"\n')
 
         # Iterate through each episode in the feed
+        n = len(feed.entries)
         for entry in feed.entries:
-            name = entry.title
+            episode_name = f'{n}. entry.title'
+            n = n - 1
             description = entry.description
             download_url = str(entry['links'][-1]['href'])
             published_date = format_time_struct(entry['published_parsed'])
             # Print formatted information
-            print('+' * 79)
+            print("+" * 79)
             f.write('+' * 79 + '\n')
-            print(f'Episode Name: \' {entry.title} \'')
-            f.write(f'Episode Name: " {entry.title} "\n')
-            print(f'Description:')
+            print(f"Episode Name: \' {episode_name} \'")
+            f.write(f'Episode Name: " {episode_name} "\n')
+            print(f"Description:")
             f.write(f'Description:\n')
-            print('\t', f'{entry.description}')
+            print('\tdatetime', f"{entry.description}")
             f.write(f'\t{entry.description}\n')
-            print(f'Enclosure URL:')
+            print(f"Enclosure URL:")
             f.write(f'Enclosure URL:\n')
-            '''
-            i = 0
-            for k in entry['links']:
-                href = entry['links'][i]['href']
-                if href.endswith('.mp3'):
-                    download_url = href
-                print(i, '->', entry['links'][i]['href'])
-                f.write(f'{i}  ->  {entry['links'][i]['href']}\n')
-                i += 1
-            '''
-            print(f'Download URL:')
+            print(f"Download URL:")
             f.write(f'Download URL:\n')
-            print('\t', f'{download_url}')
+            print('\t', f"{download_url}")
             f.write(f'\t{download_url}\n')
             with open(mp3_file, 'a') as mp3:
-                mp3.write(f'{published_date} <> ' +
-                          f'{entry.title} _|_ ' +
+                mp3.write(f'{podcast_title} ' +
+                          f'{published_date}_-_' +
+                          f'{episode_name} _|_ ' +
                           f'{download_url}\n')
 
             remove_duplicates(mp3_file)
@@ -206,9 +213,9 @@ if __name__ == "__main__":
     podcast_url = selected_option[1]
     print(f" selected podcast: {podcast_title}")
     print(f" selected url    : {podcast_url}")
-    rss_file = f'{podcast_title}.feed.rss'
-    parsed_file = f'{podcast_title}.parsed.txt'
-    mp3_file = f'{podcast_title}.mp3.txt'
+    rss_file = f'{parsed_directory}/{podcast_title}.feed.rss'
+    parsed_file = f'{parsed_directory}/{podcast_title}.parsed.txt'
+    mp3_file = f'{parsed_directory}/{podcast_title}.mp3.txt'
     download_feed(podcast_title, podcast_url)
     rss_data = read_feed(rss_file)
     fetch_podcast_info(rss_data, parsed_file, mp3_file)

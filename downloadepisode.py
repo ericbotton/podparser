@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import curses
 import os
 import requests
@@ -5,7 +6,8 @@ import shutil
 from mutagen.id3 import ID3
 from tqdm import tqdm
 
-podcast_directory = "/home/edb/podparser/"
+podcast_directory = "/home/edb/podparser/parsed"
+episode_directory = "/home/edb/podparser/episodes"
 tmp_directory = "/tmp"
 
 
@@ -81,7 +83,7 @@ def scrollable_list(items, max_visible=17):
               f"{len(items) // max_visible + 1}] ===")
 
         choice = input("Enter the number of your choice," +
-                       "'p' previous page, 'n' next page, or 'q' to quit: >")
+                       "[p] previous page, [n] next page, or [q] to quit: >")
         try:
             choice = int(choice)
             if 1 <= choice <= len(items):
@@ -111,20 +113,29 @@ def download_episode(url, filename):
             file.write(data)
 
 
+def get_mp3_tags(file_path):
+    tag_dict = ID3(file_path)
+    tag_list = []
+    for key in tag_dict.keys():
+        tag_list.append(f"<{key}> = \"{tag_dict[key]}\" | ")
+    return (tag_list, tag_dict)
+
+
 def rename_and_tag(old_path, new_path):
     try:
+        new_path = f'{new_path}'
         shutil.move(old_path, new_path)
         print(f"File renamed and moved successfully: {old_path} -> {new_path}")
     except shutil.Error as e:
         print(f"Error: {e}")
 
 
-def list_mp3_tags(file_path):
-    audio = ID3(file_path)
+def print_mp3_tags(tag_dict):
     tag_list = []
-    for key in audio.keys():
-        tag_list.append(f"<{key}> = \"{audio[key]}\" | ")
-    print(str(tag_list))
+    for tag_name in tag_dict.keys():
+        tag_list.append(tag_name)
+        print(f"[{tag_name}]: {tag_dict[tag_name]}")
+        print(f'[tags: ]{str(tag_list)}')
 
 
 if __name__ == '__main__':
@@ -170,31 +181,18 @@ if __name__ == '__main__':
 
     if selected_index is not None:
         episode_date_title = items[selected_index]
-        # print(f'episode_date_title="{episode_date_title}"')
+        # print(f"episode_date_title=\"{episode_date_title}\"")
         episode_url = title_url_dict[episode_date_title]
-        # print(f'episode_url="{episode_url}"')
+        # print(f"episode_url="{episode_url}"")
 
     print(f"TITLE={episode_date_title}")
     print(episode_url)
 
     tmp_filename = f'{tmp_directory}/{episode_date_title}'
-    dest_filename = f'{podcast_directory}/{episode_date_title}'
+    dest_filename = f'{episode_directory}/{episode_date_title}'
     download_episode(episode_url, tmp_filename)
+    with open(f'{podcast_directory}/{episode_date_title}.mp3.tags', 'w') as f:
+        tag_list, tag_dict = get_mp3_tags(tmp_filename)
+        f.write(str(tag_dict))
+        f.write(str(tag_list))
     rename_and_tag(tmp_filename, dest_filename)
-    list_mp3_tags(dest_filename)
-
-'''
-
-
-    selected_item = scrollable_list(options, max_visible=17)
-    print(f'selected item={selected_item}')
-
-    # selected_mp3 = curses.wrapper(select_from_list, options)
-    # print(f'selected mp3: {selected_mp3}')
-
-    print(f'title: {selected_item}')
-    print(f'  URL: {title_url_dict[selected_item]}')
-
-    rename_and_tag(filename, dest_filename):
-    # Specify the old and new file names
-'''
