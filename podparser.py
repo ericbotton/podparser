@@ -37,7 +37,7 @@ parsed_directory = '/home/edb/podparser/parsed/'
 
 
 def download_feed(podcast_title, podcast_url):
-    rss_file = f'{podcast_title}.feed.rss'
+    rss_file = f'{parsed_directory}/{podcast_title}.feed.rss'
     response = requests.get(podcast_url)
     total_size = len(response.content)
     with open(rss_file, 'wb') as f:
@@ -81,7 +81,7 @@ def fetch_podcast_info(rss_feed, parsed_file, mp3_file):
         # Iterate through each episode in the feed
         n = len(feed.entries)
         for entry in feed.entries:
-            episode_name = f'{n}. entry.title'
+            episode_name = f'{n}. {entry.title}'
             n = n - 1
             description = entry.description
             download_url = str(entry['links'][-1]['href'])
@@ -111,7 +111,6 @@ def fetch_podcast_info(rss_feed, parsed_file, mp3_file):
 
 
 def remove_duplicates(filename):
-
     lines = []
     with open(filename, 'r') as f:
         for line in f:
@@ -124,7 +123,6 @@ def remove_duplicates(filename):
 
 
 def tag_and_rename(pod, episode, file_path):
-
     # pubDate='Sun, 31 Dec 2099 23:59:59 -0800'
 
     published_pieces = episode.published.split()[1:4]

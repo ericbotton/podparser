@@ -185,8 +185,11 @@ if __name__ == '__main__':
         episode_url = title_url_dict[episode_date_title]
         # print(f"episode_url="{episode_url}"")
 
-    print(f"TITLE={episode_date_title}")
-    print(episode_url)
+    if episode_date_title:
+        print(f"TITLE={episode_date_title}")
+        print(episode_url)
+    else:
+        exit("quit.")
 
     tmp_filename = f'{tmp_directory}/{episode_date_title}'
     dest_filename = f'{episode_directory}/{episode_date_title}'
